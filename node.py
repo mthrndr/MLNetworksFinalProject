@@ -1,6 +1,7 @@
 from typing import Self
 
 ALPHA = 0.5
+QUEUE_TIME = 0
 
 
 class Node:
@@ -17,13 +18,22 @@ class Node:
     def get_index(self) -> int:
         return self.index
 
+    def get_neighbors(self) -> dict:
+        return self.neighbors
+
     def add_neighbor(self, neighbor: Self, cost: float) -> None:
         self.neighbors[neighbor] = cost
 
     def delete_neighbor(self, neighbor: Self) -> bool:
-        if self.neighbors.get(neighbor):
+        if self.neighbors.get(neighbor) is not None:
             del self.neighbors[neighbor]
             return True
         else:
             raise ValueError(f"Node {self.index} does not have "
-                             "{neighbor.index} as a neighbor")
+                             f"{neighbor.index} as a neighbor")
+
+    def __eq__(self, other: Self) -> bool:
+        return self.index == other.index
+
+    def __hash__(self) -> int:
+        return hash(self.index)
