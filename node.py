@@ -8,6 +8,10 @@ NODE_DICT = {}
 CURR_MAX_INDEX = 0
 
 
+def get_nodes():
+    return NODE_DICT
+
+
 class Node:
     """
     Nodes can receive and send packets to other nodes.
@@ -37,6 +41,22 @@ class Node:
         NODE_DICT.clear()
         CURR_MAX_INDEX = 0
 
+    @classmethod
+    def create_nodes_from_table(cls, table: list[list[float]]) -> dict:
+        """
+        Takes in a table of nodes, and the cost to go to their neighbors.
+        Clears out any current nodes, and then creates nodes based on the
+        values in the table.
+        """
+        Node.clear_nodes()
+        for node in table:
+            Node.create_node()
+
+        for node in table:
+            for other_node in node:
+                print('lol!')
+        return NODE_DICT
+
     def get_index(self) -> int:
         return self.index
 
@@ -65,7 +85,3 @@ class Node:
         Nodes should have unique indexes
         """
         return hash(self.index)
-
-
-def get_nodes():
-    return NODE_DICT
