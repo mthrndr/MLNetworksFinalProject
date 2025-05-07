@@ -1,14 +1,14 @@
 from pytest import fixture
 
-import node as nd
+from node import Node
 
 RAND_COST = 0.5
 
 
 @fixture
 def new_node():
-    yield nd.Node.create_node
-    nd.Node.clear_nodes()
+    yield Node.create_node
+    Node.clear_nodes()
 
 
 def test_create_node(new_node):
@@ -16,11 +16,11 @@ def test_create_node(new_node):
 
 
 def test_get_nodes(new_node):
-    node_dict = nd.get_nodes()
+    node_dict = Node.get_nodes()
     assert len(node_dict) == 0
     new_node()
     assert len(node_dict) == 1
-    nd.Node.clear_nodes()
+    Node.clear_nodes()
     assert len(node_dict) == 0
 
 
@@ -46,3 +46,23 @@ def test_delete_neighbor(new_node):
     node_1.delete_neighbor(node_2)
     ret = node_1.get_neighbors()
     assert node_2 not in ret
+
+
+SAMPLE_TABLE = [
+    [0, 1, 0, 0],
+    [1, 0, 1, 1],
+    [0, 1, 0, 0],
+    [0, 1, 0, 0],
+]
+
+
+def test_create_nodes_from_table():
+    Node.create_nodes_from_table(SAMPLE_TABLE)
+    nodes = Node.get_nodes()
+    assert len(nodes) == len(SAMPLE_TABLE)
+    assert nodes[0].is_neighbors_with(nodes[1])
+    assert nodes[1].is_neighbors_with(nodes[0])
+    assert nodes[1].is_neighbors_with(nodes[2])
+    assert nodes[1].is_neighbors_with(nodes[3])
+    assert nodes[2].is_neighbors_with(nodes[1])
+    assert nodes[3].is_neighbors_with(nodes[1])
