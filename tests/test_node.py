@@ -1,4 +1,7 @@
-from pytest import fixture
+from pytest import (
+    fixture,
+    raises,
+)
 
 from node import Node
 
@@ -9,6 +12,13 @@ RAND_COST = 0.5
 def new_node():
     yield Node.create_node
     Node.clear_nodes()
+
+
+def create_neighbor_nodes(new_node) -> tuple[Node, Node]:
+    node_1 = new_node()
+    node_2 = new_node()
+    node_1.add_neighbor(node_2, RAND_COST)
+    return (node_1, node_2)
 
 
 def test_create_node(new_node):
@@ -29,23 +39,44 @@ def test_get_index(new_node):
 
 
 def test_add_neighbor(new_node):
-    node_1 = new_node()
-    node_2 = new_node()
-    node_1.add_neighbor(node_2, RAND_COST)
+    node_1, node_2 = create_neighbor_nodes(new_node)
     ret = node_1.get_neighbors()
     assert ret
     assert node_2 in ret
 
 
 def test_delete_neighbor(new_node):
-    node_1 = new_node()
-    node_2 = new_node()
-    node_1.add_neighbor(node_2, RAND_COST)
+    node_1, node_2 = create_neighbor_nodes(new_node)
     ret = node_1.get_neighbors()
     assert node_2 in ret
     node_1.delete_neighbor(node_2)
     ret = node_1.get_neighbors()
     assert node_2 not in ret
+
+
+def test_delete_neighbor_not_neighbors(new_node):
+    node_1 = new_node()
+    node_2 = new_node()
+    with raises(ValueError):
+        node_1.delete_neighbor(node_2)
+
+
+def test_raise_not_neighbors(new_node):
+    node_1 = new_node()
+    node_2 = new_node()
+    with raises(ValueError):
+        Node.raise_not_neighbors(node_1, node_2)
+
+
+def test_get_estimated_cost_to(new_node):
+    node_1, node_2 = create_neighbor_nodes(new_node)
+    assert node_1.get_estimated_cost_to(node_2, node_1) == RAND_COST
+
+
+def test_get_estimated_cost_to_not_neighbors(new_node):
+    node_1 = new_node()
+    node_2 = new_node()
+    assert node_1.get_estimated_cost_to(node_2, node_1) == 0
 
 
 SAMPLE_TABLE = [

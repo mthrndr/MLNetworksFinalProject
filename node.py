@@ -26,6 +26,17 @@ class Node:
     def get_node(index: int) -> Self:
         return Node.NODE_DICT[index]
 
+    # Error methods:
+
+    @staticmethod
+    def raise_not_neighbors(main: Self, other: Self) -> None:
+        """
+        Note: Makes no actual assumption about the two nodes relation, just
+        raises the error message with their indexes.
+        """
+        raise ValueError(f"Node {main.index} does not have "
+                         f"{other.index} as a neighbor.")
+
     def __init__(self, index: int) -> Self:
         """
         Note: You should ONLY instantiate a node using the create_node factory
@@ -74,21 +85,32 @@ class Node:
         return Node.NODE_DICT
 
     def get_index(self) -> int:
+        """
+        Returns the node's index.
+        """
         return self.index
 
     def get_neighbors(self) -> dict:
+        """
+        Returns the node's neighbors.
+        """
         return self.neighbors
 
     def is_neighbors_with(self, neighbor: Self) -> bool:
+        """
+        Returns True if the provided neighbor is in the node's neighbors dict.
+        """
         return neighbor in self.neighbors
 
     def add_neighbor(self, neighbor: Self, cost: float) -> None:
         """
         Adds a neighbor to the current node, with it's cost as a value. Then
-        tries to add itself as a neighbor to the other node.
+        tries to add itself as a neighbor to the other node with the same cost.
+        This cost is different then others as it is immutable, and is
+        considered the transmission cost.
         """
         if not self.is_neighbors_with(neighbor):
-            self.neighbors[neighbor] = cost
+            self.neighbors[neighbor] = {neighbor: cost}
         if not neighbor.is_neighbors_with(self):
             neighbor.add_neighbor(self, cost)
 
@@ -102,8 +124,29 @@ class Node:
             if neighbor.is_neighbors_with(self):
                 neighbor.delete_neighbor(self)
         else:
-            raise ValueError(f"Node {self.index} does not have "
-                             f"{neighbor.index} as a neighbor")
+            Node.raise_not_neighbors(self, neighbor)
+
+    def get_estimated_cost_to(self, dest: Self, caller: Self) -> int:
+        """
+        Caller is what node originally called the estimation. This is used to
+        prevent infinite recursion
+        """
+        estimated_costs = {}
+        for neighbor in self.neighbors:
+            if neighbor is not caller:
+                neighbors_cost = neighbor.get_estimated_cost_to(dest, self)
+                estimated_costs[neighbor] = neighbors_cost
+
+        # No neighbors: dest is not accessible, return 0
+        if len(estimated_costs) == 0:
+            return 0
+
+        min_neighbor, min_cost = min(estimated_costs.items(),
+                                     key=lambda item: item[1])
+        if min_neighbor == dest:
+            return self.neighbors[dest][dest]
+
+        return min_cost
 
     def __eq__(self, other: Self) -> bool:
         """
