@@ -2,6 +2,8 @@ from typing import Self
 
 ALPHA = 0.5
 QUEUE_TIME = 0
+# Something really low so it gets picked.
+INIT_COST = 0.01
 
 
 class Node:
@@ -119,23 +121,38 @@ class Node:
         Deletes a neighbor from the current node. Then tries to delete itself
         as a neighbor from the other node.
         """
-        if self.is_neighbors_with(neighbor):
-            del self.neighbors[neighbor]
-            if neighbor.is_neighbors_with(self):
-                neighbor.delete_neighbor(self)
-        else:
+        if not self.is_neighbors_with(neighbor):
             Node.raise_not_neighbors(self, neighbor)
+
+        del self.neighbors[neighbor]
+        if neighbor.is_neighbors_with(self):
+            neighbor.delete_neighbor(self)
+
+    def get_cost_from_neighbor_to_dest(self,
+                                       neighbor: Self,
+                                       dest: Self,
+                                       ) -> float:
+        if not self.is_neighbors_with(neighbor):
+            raise Node.raise_not_neighbors(self, neighbor)
+
+        cost = self.neighbors[neighbor].get(dest, None)
+
+        if cost is None:
+            self.neighbors[neighbor][dest] = INIT_COST
+            return INIT_COST
+
+        return cost
 
     def get_estimated_cost_to(self, dest: Self, caller: Self) -> int:
         """
-        Caller is what node originally called the estimation. This is used to
-        prevent infinite recursion
+        Recursive function to get estimated costs to a destination.
         """
         estimated_costs = {}
         for neighbor in self.neighbors:
             if neighbor is not caller:
-                neighbors_cost = neighbor.get_estimated_cost_to(dest, self)
-                estimated_costs[neighbor] = neighbors_cost
+                neighbors_cost = self.get_cost_from_neighbor_to_dest(neighbor,
+                                                                     dest)
+            estimated_costs[neighbor] = neighbors_cost
 
         # No neighbors: dest is not accessible, return 0
         if len(estimated_costs) == 0:
@@ -143,8 +160,6 @@ class Node:
 
         min_neighbor, min_cost = min(estimated_costs.items(),
                                      key=lambda item: item[1])
-        if min_neighbor == dest:
-            return self.neighbors[dest][dest]
 
         return min_cost
 
