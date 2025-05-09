@@ -1,4 +1,7 @@
-from typing import Self
+from typing import (
+    Any,
+    Self,
+)
 
 ALPHA = 0.5
 QUEUE_TIME = 0
@@ -33,11 +36,19 @@ class Node:
     @staticmethod
     def raise_not_neighbors(main: Self, other: Self) -> None:
         """
-        Note: Makes no actual assumption about the two nodes relation, just
-        raises the error message with their indexes.
+        Note: Makes no assumption about the two nodes relation, just raises the
+        error message with their indexes.
         """
         raise ValueError(f"Node {main.index} does not have "
                          f"{other.index} as a neighbor.")
+
+    @staticmethod
+    def raise_not_a_node(val: Any) -> None:
+        """
+        Note: Makes no assumption about the value passed in, just raises the
+        error message.
+        """
+        raise ValueError(f"{val} is not a Node.")
 
     def __init__(self, index: int) -> Self:
         """
@@ -46,6 +57,21 @@ class Node:
         """
         self.index = index
         self.neighbors = {}
+
+    def __eq__(self, other: Self) -> bool:
+        """
+        Nodes should have unique indexes.
+        """
+        return self.index == other.index
+
+    def __hash__(self) -> int:
+        """
+        Nodes should have unique indexes.
+        """
+        return hash(self.index)
+
+    def __str__(self) -> str:
+        return f'Node {self.index}'
 
     @classmethod
     def create_node(cls) -> Self:
@@ -134,6 +160,8 @@ class Node:
                                        ) -> float:
         if not self.is_neighbors_with(neighbor):
             raise Node.raise_not_neighbors(self, neighbor)
+        if not isinstance(dest, Node):
+            raise Node.raise_not_a_node(dest)
 
         cost = self.neighbors[neighbor].get(dest, None)
 
@@ -147,6 +175,9 @@ class Node:
         """
         Recursive function to get estimated costs to a destination.
         """
+        if not isinstance(dest, Node):
+            raise Node.raise_not_a_node(dest)
+
         estimated_costs = {}
         for neighbor in self.neighbors:
             if neighbor is not caller:
@@ -162,15 +193,3 @@ class Node:
                                      key=lambda item: item[1])
 
         return min_cost
-
-    def __eq__(self, other: Self) -> bool:
-        """
-        Nodes should have unique indexes.
-        """
-        return self.index == other.index
-
-    def __hash__(self) -> int:
-        """
-        Nodes should have unique indexes.
-        """
-        return hash(self.index)

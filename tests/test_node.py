@@ -3,7 +3,10 @@ from pytest import (
     raises,
 )
 
-from node import Node
+from node import (
+    INIT_COST,
+    Node,
+)
 
 RAND_COST = 0.5
 
@@ -68,15 +71,9 @@ def test_raise_not_neighbors(new_node):
         Node.raise_not_neighbors(node_1, node_2)
 
 
-def test_get_estimated_cost_to(new_node):
-    node_1, node_2 = create_neighbor_nodes(new_node)
-    assert node_1.get_estimated_cost_to(node_2, node_1) == RAND_COST
-
-
-def test_get_estimated_cost_to_not_neighbors(new_node):
-    node_1 = new_node()
-    node_2 = new_node()
-    assert node_1.get_estimated_cost_to(node_2, node_1) == 0
+def test_raises_not_a_node():
+    with raises(ValueError):
+        Node.raise_not_a_node('something!')
 
 
 SAMPLE_TABLE = [
@@ -97,3 +94,34 @@ def test_create_nodes_from_table():
     assert nodes[1].is_neighbors_with(nodes[3])
     assert nodes[2].is_neighbors_with(nodes[1])
     assert nodes[3].is_neighbors_with(nodes[1])
+    Node.clear_nodes()
+
+
+def test_get_cost_from_neighbor_to_dest(new_node):
+    """
+    The reason the correct cost is INIT_COST and not whatever we set the value
+    between node 2 and node 3 to be is that node_1 does not yet know the
+    expected value from node_2 to node_3 so it must initialize it.
+    """
+    node_1, node_2 = create_neighbor_nodes(new_node)
+    node_3 = new_node()
+    node_2.add_neighbor(node_3, '0.8')
+    print(node_2)
+    assert node_1.get_cost_from_neighbor_to_dest(node_2, node_3) == INIT_COST
+
+
+def test_get_estimated_cost_to(new_node):
+    node_1, node_2 = create_neighbor_nodes(new_node)
+    assert node_1.get_estimated_cost_to(node_2, node_1) == RAND_COST
+
+
+def test_get_estimated_cost_to_not_neighbors(new_node):
+    node_1 = new_node()
+    node_2 = new_node()
+    assert node_1.get_estimated_cost_to(node_2, node_1) == 0
+
+
+def test_get_estimated_cost_to_not_a_node(new_node):
+    node_1 = new_node()
+    with raises(ValueError):
+        node_1.get_estimated_cost_to('something', node_1)
