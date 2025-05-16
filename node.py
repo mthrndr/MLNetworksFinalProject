@@ -10,7 +10,7 @@ import costs as costs
 ALPHA = 0.5
 QUEUE_TIME = 0
 # Something really low so it gets picked.
-INIT_COST = 0.01
+INIT_COST = 0
 
 # For use in the estimated cost tuple
 ESTIMATED_NODE = 0
@@ -191,7 +191,7 @@ class Node:
 
     def get_estimated_cost_to(self,
                               dest: Self,
-                              caller: Self
+                              callers: list[Self],
                               ) -> tuple[Self, float]:
         """
         Recursive function to get the estimated cheapest cost to get to a
@@ -208,10 +208,10 @@ class Node:
             # We do not want to include the caller in order to prevent a
             # situation where two nodes both think they have the shortest
             # distance to the destination
-            if neighbor is not caller:
+            if neighbor not in callers:
                 neighbors_cost = self.get_cost_from_neighbor_to_dest(neighbor,
                                                                      dest)
-            estimated_costs[neighbor] = neighbors_cost
+                estimated_costs[neighbor] = neighbors_cost
 
         # No neighbors: dest is not accessible, return 0
         if len(estimated_costs) == 0:
@@ -222,7 +222,11 @@ class Node:
 
         return (min_neighbor, min_cost)
 
-    def get_actual_cost(self, dest: Self) -> float:
+    def get_transmission_cost(self, dest: Self) -> float:
+        """
+        Just calls the get_transmission_cost function from the costs module and
+        passes the two nodes' indexes.
+        """
         return costs.get_transmission_cost(sender=self.get_index(),
                                            dest=dest.get_index())
 
@@ -233,23 +237,43 @@ class Node:
                        transmission_cost: float,
                        neighbors_estimated_cost: float,
                        ) -> NoReturn:
+        """
+        Implements the Q-Routing delay update function, then updates the node's
+        cost table from it's neighbor to the destination.
+        """
         new_cost = QUEUE_TIME + transmission_cost + neighbors_estimated_cost
         updated_cost = ((1 - ALPHA) * current_cost) + (ALPHA * new_cost)
         self.neighbors[neighbor][dest] = updated_cost
 
-    def route(self, dest: Self, caller: Self) -> float:
+    def route(self,
+              dest: Self,
+              callers: list[Self] = [],
+              training: bool = True
+              ) -> float:
         """
-        get cheapest cost node from point to dest
-        ask this node to give you its estimated cost
-        set this as your new estimated cost to a destination
-        return estimated cost
+        Actually runs the Q-Routing protocol.
+        If no caller is provided, it is assumed this is the first call.
+        1. Finds out which neighbor it believes has the cheapest route to the
+        destination
+        2. Send the route to the neighbor, which returns it's initial estimated
+        cost to reach the destination
+        3. Update estimated cost based on neighbor's cost and transmission
+        cost.
+        4. Return your initial estimated cost to complete recursion. If the
+        node who receives the route is the destination, they just return 0.
         """
-        (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, self)
-        neighbors_estimated_cost = min_neighbor.route(dest)
-        transmission_cost = self.get_transmission_cost(min_neighbor)
-        self.update_cost_to(min_neighbor,
-                            dest,
-                            min_cost,
-                            transmission_cost,
-                            neighbors_estimated_cost)
+        if self is dest:
+            return 0
+        (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, callers)
+        if min_neighbor is None:
+            return 0
+        callers.append(self)
+        neighbors_estimated_cost = min_neighbor.route(dest, callers)
+        if training:
+            transmission_cost = self.get_transmission_cost(min_neighbor)
+            self.update_cost_to(min_neighbor,
+                                dest,
+                                min_cost,
+                                transmission_cost,
+                                neighbors_estimated_cost)
         return min_cost
