@@ -6,6 +6,7 @@ from pytest import (
 from node import (
     INIT_COST,
     Node,
+    ESTIMATED_COST,
 )
 
 RAND_COST = 0.5
@@ -112,16 +113,25 @@ def test_get_cost_from_neighbor_to_dest(new_node):
 
 def test_get_estimated_cost_to(new_node):
     node_1, node_2 = create_neighbor_nodes(new_node)
-    assert node_1.get_estimated_cost_to(node_2, node_1) == RAND_COST
+    ret = node_1.get_estimated_cost_to(node_2, node_1)
+    assert ret[ESTIMATED_COST] == RAND_COST
 
 
 def test_get_estimated_cost_to_not_neighbors(new_node):
     node_1 = new_node()
     node_2 = new_node()
-    assert node_1.get_estimated_cost_to(node_2, node_1) == 0
+    ret = node_1.get_estimated_cost_to(node_2, node_1)
+    assert ret[ESTIMATED_COST] == 0
 
 
 def test_get_estimated_cost_to_not_a_node(new_node):
     node_1 = new_node()
     with raises(ValueError):
         node_1.get_estimated_cost_to('something', node_1)
+
+
+def test_get_random_node(new_node):
+    TEST_SIZE = 10
+    for i in range(TEST_SIZE):
+        new_node()
+    assert 0 <= Node.get_random_node_index() < TEST_SIZE

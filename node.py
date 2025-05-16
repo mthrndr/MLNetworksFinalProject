@@ -1,12 +1,20 @@
+from random import randrange
 from typing import (
     Any,
+    NoReturn,
     Self,
 )
+
+import costs as costs
 
 ALPHA = 0.5
 QUEUE_TIME = 0
 # Something really low so it gets picked.
 INIT_COST = 0.01
+
+# For use in the estimated cost tuple
+ESTIMATED_NODE = 0
+ESTIMATED_COST = 1
 
 
 class Node:
@@ -34,7 +42,7 @@ class Node:
     # Error methods:
 
     @staticmethod
-    def raise_not_neighbors(main: Self, other: Self) -> None:
+    def raise_not_neighbors(main: Self, other: Self) -> NoReturn:
         """
         Note: Makes no assumption about the two nodes relation, just raises the
         error message with their indexes.
@@ -43,7 +51,7 @@ class Node:
                          f"{other.index} as a neighbor.")
 
     @staticmethod
-    def raise_not_a_node(val: Any) -> None:
+    def raise_not_a_node(val: Any) -> NoReturn:
         """
         Note: Makes no assumption about the value passed in, just raises the
         error message.
@@ -86,7 +94,7 @@ class Node:
         return new_node
 
     @classmethod
-    def clear_nodes(cls) -> None:
+    def clear_nodes(cls) -> NoReturn:
         """
         Clears out the NODE_DICT as well as reseting CURR_MAX_INDEX to 0.
         """
@@ -112,6 +120,12 @@ class Node:
                                            other_cost)
         return Node.NODE_DICT
 
+    def get_random_node_index() -> int:
+        """
+        Returns a value between 0 and n, where n is the index of the final node
+        """
+        return randrange(Node.CURR_MAX_INDEX)
+
     def get_index(self) -> int:
         """
         Returns the node's index.
@@ -130,7 +144,7 @@ class Node:
         """
         return neighbor in self.neighbors
 
-    def add_neighbor(self, neighbor: Self, cost: float) -> None:
+    def add_neighbor(self, neighbor: Self, cost: float) -> NoReturn:
         """
         Adds a neighbor to the current node, with it's cost as a value. Then
         tries to add itself as a neighbor to the other node with the same cost.
@@ -142,7 +156,7 @@ class Node:
         if not neighbor.is_neighbors_with(self):
             neighbor.add_neighbor(self, cost)
 
-    def delete_neighbor(self, neighbor: Self) -> None:
+    def delete_neighbor(self, neighbor: Self) -> NoReturn:
         """
         Deletes a neighbor from the current node. Then tries to delete itself
         as a neighbor from the other node.
@@ -158,6 +172,10 @@ class Node:
                                        neighbor: Self,
                                        dest: Self,
                                        ) -> float:
+        """
+        Returns the cost that the node believes it will take to go to a
+        destination from one of it's neighbors.
+        """
         if not self.is_neighbors_with(neighbor):
             raise Node.raise_not_neighbors(self, neighbor)
         if not isinstance(dest, Node):
@@ -171,15 +189,25 @@ class Node:
 
         return cost
 
-    def get_estimated_cost_to(self, dest: Self, caller: Self) -> int:
+    def get_estimated_cost_to(self,
+                              dest: Self,
+                              caller: Self
+                              ) -> tuple[Self, float]:
         """
-        Recursive function to get estimated costs to a destination.
+        Recursive function to get the estimated cheapest cost to get to a
+        destination, and the node it would use to do so.
+        Format of the return tuple is (node, cost).
+        This method exclusively uses knowledge that the node already has, and
+        thus SHOULD NOT call any other node's methods.
         """
         if not isinstance(dest, Node):
             raise Node.raise_not_a_node(dest)
 
         estimated_costs = {}
         for neighbor in self.neighbors:
+            # We do not want to include the caller in order to prevent a
+            # situation where two nodes both think they have the shortest
+            # distance to the destination
             if neighbor is not caller:
                 neighbors_cost = self.get_cost_from_neighbor_to_dest(neighbor,
                                                                      dest)
@@ -187,9 +215,41 @@ class Node:
 
         # No neighbors: dest is not accessible, return 0
         if len(estimated_costs) == 0:
-            return 0
+            return (None, 0)
 
         min_neighbor, min_cost = min(estimated_costs.items(),
                                      key=lambda item: item[1])
 
+        return (min_neighbor, min_cost)
+
+    def get_actual_cost(self, dest: Self) -> float:
+        return costs.get_transmission_cost(sender=self.get_index(),
+                                           dest=dest.get_index())
+
+    def update_cost_to(self,
+                       neighbor: Self,
+                       dest: Self,
+                       current_cost: float,
+                       transmission_cost: float,
+                       neighbors_estimated_cost: float,
+                       ) -> NoReturn:
+        new_cost = QUEUE_TIME + transmission_cost + neighbors_estimated_cost
+        updated_cost = ((1 - ALPHA) * current_cost) + (ALPHA * new_cost)
+        self.neighbors[neighbor][dest] = updated_cost
+
+    def route(self, dest: Self, caller: Self) -> float:
+        """
+        get cheapest cost node from point to dest
+        ask this node to give you its estimated cost
+        set this as your new estimated cost to a destination
+        return estimated cost
+        """
+        (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, self)
+        neighbors_estimated_cost = min_neighbor.route(dest)
+        transmission_cost = self.get_transmission_cost(min_neighbor)
+        self.update_cost_to(min_neighbor,
+                            dest,
+                            min_cost,
+                            transmission_cost,
+                            neighbors_estimated_cost)
         return min_cost

@@ -1,7 +1,4 @@
-from random import (
-    random,
-    randrange,
-)
+from random import random
 
 NUM_NODES = 10
 
@@ -55,13 +52,6 @@ def fill_table_with_init_costs(
             else:
                 node_cost_table[i][j] = get_init_cost()
     return node_cost_table
-
-
-def get_random_node() -> int:
-    """
-    Returns a value between 0 and n, where n is the index of the final node
-    """
-    return randrange(NUM_NODES)
 
 
 def get_init_node_cost_table() -> list:

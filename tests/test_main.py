@@ -30,10 +30,6 @@ def test_fill_table_with_init_costs():
     assert table[1][1] == 0
 
 
-def test_get_random_node():
-    assert 0 <= mn.get_random_node() < NUM_NODES
-
-
 def test_gen_init_node_cost_table():
     table = mn.get_init_node_cost_table()
     assert len(table) == NUM_NODES
