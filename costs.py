@@ -10,6 +10,9 @@ SAMPLE_TABLE = [
     [0, 1, 0, 0],
 ]
 
+MAX_COST = 1.00
+NOT_ACCESSIBLE_COST = MAX_COST + 1.00
+
 
 def custom_table_print(table: list) -> bool:
     for row in table:
@@ -21,7 +24,7 @@ def custom_table_print(table: list) -> bool:
 
 def get_init_cost() -> float:
     """
-    Provides a random cost for a node to reach another node
+    Provides a random cost between 0 and 1 for a node to reach another node
     """
     return random()
 
@@ -62,7 +65,3 @@ def get_init_node_cost_table() -> list:
     node_cost_table = gen_empty_table()
     fill_table_with_init_costs(node_cost_table)
     return node_cost_table
-
-
-def get_transmission_cost(sender: int, dest: int) -> float:
-    return 0.5

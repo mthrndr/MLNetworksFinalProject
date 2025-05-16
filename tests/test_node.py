@@ -9,6 +9,8 @@ from node import (
     ESTIMATED_COST,
 )
 
+from costs import NOT_ACCESSIBLE_COST
+
 RAND_COST = 0.5
 
 
@@ -107,8 +109,19 @@ def test_get_cost_from_neighbor_to_dest(new_node):
     node_1, node_2 = create_neighbor_nodes(new_node)
     node_3 = new_node()
     node_2.add_neighbor(node_3, '0.8')
-    print(node_2)
     assert node_1.get_cost_from_neighbor_to_dest(node_2, node_3) == INIT_COST
+
+
+def test_get_cost_from_neighbor_to_dest_not_neighbors(new_node):
+    """
+    The reason the correct cost is INIT_COST and not whatever we set the value
+    between node 2 and node 3 to be is that node_1 does not yet know the
+    expected value from node_2 to node_3 so it must initialize it.
+    """
+    node_1 = new_node()
+    node_2 = new_node()
+    with raises(ValueError):
+        assert node_1.get_cost_from_neighbor_to_dest(node_2, node_2)
 
 
 def test_get_estimated_cost_to(new_node):
@@ -121,7 +134,7 @@ def test_get_estimated_cost_to_not_neighbors(new_node):
     node_1 = new_node()
     node_2 = new_node()
     ret = node_1.get_estimated_cost_to(node_2, [node_1])
-    assert ret[ESTIMATED_COST] == 0
+    assert ret[ESTIMATED_COST] == NOT_ACCESSIBLE_COST
 
 
 def test_get_estimated_cost_to_not_a_node(new_node):

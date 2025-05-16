@@ -5,7 +5,7 @@ from typing import (
     Self,
 )
 
-import costs as costs
+from costs import NOT_ACCESSIBLE_COST
 
 ALPHA = 0.5
 QUEUE_TIME = 0
@@ -26,6 +26,7 @@ class Node:
     """
     NODE_DICT = {}
     CURR_MAX_INDEX = 0
+    COST_TABLE = []
 
     @staticmethod
     def get_nodes() -> dict[int, Self]:
@@ -108,6 +109,7 @@ class Node:
         Clears out any current nodes, and then creates nodes based on the
         values in the table.
         """
+        Node.COST_TABLE = table
         Node.clear_nodes()
         for node in table:
             Node.create_node()
@@ -203,6 +205,9 @@ class Node:
         if not isinstance(dest, Node):
             raise Node.raise_not_a_node(dest)
 
+        if self is dest:
+            return (Self, 0)
+
         estimated_costs = {}
         for neighbor in self.neighbors:
             # We do not want to include the caller in order to prevent a
@@ -213,22 +218,22 @@ class Node:
                                                                      dest)
                 estimated_costs[neighbor] = neighbors_cost
 
-        # No neighbors: dest is not accessible, return 0
+        # No neighbors: dest is not accessible, return NOT ACCESSIBLE which is
+        # a very high cost
         if len(estimated_costs) == 0:
-            return (None, 0)
+            return (None, NOT_ACCESSIBLE_COST)
 
         min_neighbor, min_cost = min(estimated_costs.items(),
                                      key=lambda item: item[1])
 
         return (min_neighbor, min_cost)
 
-    def get_transmission_cost(self, dest: Self) -> float:
+    def get_transmission_cost(self, neighbor: Self) -> float:
         """
         Just calls the get_transmission_cost function from the costs module and
-        passes the two nodes' indexes.
+        passes the two nodes' indexes. The destination must be a neighbor.
         """
-        return costs.get_transmission_cost(sender=self.get_index(),
-                                           dest=dest.get_index())
+        return self.get_cost_from_neighbr_to_dest(neighbor, neighbor)
 
     def update_cost_to(self,
                        neighbor: Self,
@@ -263,10 +268,9 @@ class Node:
         node who receives the route is the destination, they just return 0.
         """
         if self is dest:
+            print("At destination!")
             return 0
         (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, callers)
-        if min_neighbor is None:
-            return 0
         callers.append(self)
         neighbors_estimated_cost = min_neighbor.route(dest, callers)
         if training:
@@ -276,4 +280,8 @@ class Node:
                                 min_cost,
                                 transmission_cost,
                                 neighbors_estimated_cost)
-        return min_cost
+        if len(callers) > 0:
+            return min_cost
+        else:
+            # First sender, return final cost
+            return self.get_cost_from_neighbor_to_dest(min_neighbor, dest)

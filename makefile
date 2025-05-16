@@ -4,7 +4,7 @@ dev_env:
 .PHONY: tests
 tests:
 	flake8
-	pytest --verbose --cov-branch --cov-report term-missing --tb=short --cov=main
+	pytest --verbose --cov-report term-missing --tb=short --cov=.
 
 github: tests
 	git commit -a
