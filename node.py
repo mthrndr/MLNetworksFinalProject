@@ -270,11 +270,8 @@ class Node:
         Implements the Q-Routing delay update function, then updates the node's
         cost table from it's neighbor to the destination.
         """
-        print("In here!")
         queue_time = self.get_queue_time()
         new_cost = queue_time + transmission_cost + neighbors_estimated_cost
-        print(f'{new_cost=}')
-        print(f'{current_cost=}')
         updated_cost = ((1 - ALPHA) * current_cost) + (ALPHA * new_cost)
         self.neighbors[neighbor][dest] = updated_cost
         return updated_cost
@@ -297,11 +294,11 @@ class Node:
         node who receives the route is the destination, they just return 0.
         """
         if self is dest:
-            print("At destination!")
             return SELF_COST
         (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, callers)
-        callers.append(self)
-        neighbors_estimated_cost = min_neighbor.route(dest, callers)
+        new_callers = callers.copy()
+        new_callers.append(self)
+        neighbors_estimated_cost = min_neighbor.route(dest, new_callers)
         if training:
             transmission_cost = self.get_transmission_cost(min_neighbor)
             self.update_cost_to(min_neighbor,

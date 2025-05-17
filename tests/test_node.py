@@ -219,3 +219,15 @@ def test_update_cost_to(new_node: Callable):
     expected = (((1 - ALPHA) * TEST_COST) +
                 (ALPHA * (TEST_COST + TEST_COST + node_1.get_queue_time())))
     assert new_cost == expected
+
+
+def test_route(new_node: Callable):
+    TEST_COST = 0.8
+    node_1, node_2 = create_neighbor_nodes(new_node, TEST_COST)
+    node_3 = new_node()
+    node_2.add_neighbor(node_3, TEST_COST)
+    node_1.route(node_3)
+    new_cost = node_1.route(node_3)
+    expected = (((1 - ALPHA) * TEST_COST) +
+                (ALPHA * (TEST_COST + TEST_COST + node_1.get_queue_time())))
+    assert new_cost == expected
