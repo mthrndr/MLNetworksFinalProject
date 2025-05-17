@@ -10,6 +10,14 @@ SAMPLE_TABLE = [
     [0, 1, 0, 0],
 ]
 
+SAMPLE_TABLE_2 = [
+    [0,   0.8, 0,   0,   0.7],
+    [0.8, 0,   0.3, 0,   0],
+    [0,   0.3, 0,   0.5, 0.2],
+    [0,   0,   0.5, 0,   0],
+    [0.7, 0,   0.2, 0,   0],
+]
+
 MAX_COST = 1.00
 NOT_ACCESSIBLE_COST = MAX_COST + 1.00
 # How much it costs a node to access itself

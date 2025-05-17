@@ -1,7 +1,6 @@
 flake8
 matplotlib
 networkx
-jupyter
 pytest
 pytest-cov
 PyQt6

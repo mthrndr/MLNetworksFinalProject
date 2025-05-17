@@ -6,7 +6,7 @@ TIMESTEPS = 100
 
 def initialize_sim():
     # table = costs.get_init_node_cost_table()
-    table = costs.SAMPLE_TABLE
+    table = costs.SAMPLE_TABLE_2
     Node.create_nodes_from_table(table)
     Node.print_nodes()
     for i in range(TIMESTEPS):
