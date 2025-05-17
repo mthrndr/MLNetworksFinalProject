@@ -2,6 +2,7 @@ from pytest import (
     fixture,
     raises,
 )
+from typing import Callable
 
 from node import (
     INIT_COST,
@@ -9,7 +10,10 @@ from node import (
     ESTIMATED_COST,
 )
 
-from costs import NOT_ACCESSIBLE_COST
+from costs import (
+    NOT_ACCESSIBLE_COST,
+    SELF_COST,
+)
 
 RAND_COST = 0.5
 
@@ -20,18 +24,20 @@ def new_node():
     Node.clear_nodes()
 
 
-def create_neighbor_nodes(new_node) -> tuple[Node, Node]:
+def create_neighbor_nodes(new_node: Callable,
+                          cost: float = RAND_COST,
+                          ) -> tuple[Node, Node]:
     node_1 = new_node()
     node_2 = new_node()
-    node_1.add_neighbor(node_2, RAND_COST)
+    node_1.add_neighbor(node_2, cost)
     return (node_1, node_2)
 
 
-def test_create_node(new_node):
+def test_create_node(new_node: Callable):
     assert new_node()
 
 
-def test_get_nodes(new_node):
+def test_get_nodes(new_node: Callable):
     node_dict = Node.get_nodes()
     assert len(node_dict) == 0
     new_node()
@@ -40,18 +46,26 @@ def test_get_nodes(new_node):
     assert len(node_dict) == 0
 
 
-def test_get_index(new_node):
+def test_get_index(new_node: Callable):
     assert new_node().get_index() == 0
 
 
-def test_add_neighbor(new_node):
+def test_index_to_str(new_node: Callable):
+    assert isinstance(str(new_node()), str)
+
+
+def test_index_repr(new_node: Callable):
+    assert isinstance(str([new_node()]), str)
+
+
+def test_add_neighbor(new_node: Callable):
     node_1, node_2 = create_neighbor_nodes(new_node)
     ret = node_1.get_neighbors()
     assert ret
     assert node_2 in ret
 
 
-def test_delete_neighbor(new_node):
+def test_delete_neighbor(new_node: Callable):
     node_1, node_2 = create_neighbor_nodes(new_node)
     ret = node_1.get_neighbors()
     assert node_2 in ret
@@ -60,14 +74,14 @@ def test_delete_neighbor(new_node):
     assert node_2 not in ret
 
 
-def test_delete_neighbor_not_neighbors(new_node):
+def test_delete_neighbor_not_neighbors(new_node: Callable):
     node_1 = new_node()
     node_2 = new_node()
     with raises(ValueError):
         node_1.delete_neighbor(node_2)
 
 
-def test_raise_not_neighbors(new_node):
+def test_raise_not_neighbors(new_node: Callable):
     node_1 = new_node()
     node_2 = new_node()
     with raises(ValueError):
@@ -100,7 +114,7 @@ def test_create_nodes_from_table():
     Node.clear_nodes()
 
 
-def test_get_cost_from_neighbor_to_dest(new_node):
+def test_get_cost_from_neighbor_to_dest(new_node: Callable):
     """
     The reason the correct cost is INIT_COST and not whatever we set the value
     between node 2 and node 3 to be is that node_1 does not yet know the
@@ -112,7 +126,7 @@ def test_get_cost_from_neighbor_to_dest(new_node):
     assert node_1.get_cost_from_neighbor_to_dest(node_2, node_3) == INIT_COST
 
 
-def test_get_cost_from_neighbor_to_dest_not_neighbors(new_node):
+def test_get_cost_from_neighbor_to_dest_not_neighbors(new_node: Callable):
     """
     The reason the correct cost is INIT_COST and not whatever we set the value
     between node 2 and node 3 to be is that node_1 does not yet know the
@@ -124,27 +138,45 @@ def test_get_cost_from_neighbor_to_dest_not_neighbors(new_node):
         assert node_1.get_cost_from_neighbor_to_dest(node_2, node_2)
 
 
-def test_get_estimated_cost_to(new_node):
+def test_get_estimated_cost_to(new_node: Callable):
     node_1, node_2 = create_neighbor_nodes(new_node)
     ret = node_1.get_estimated_cost_to(node_2, [node_1])
     assert ret[ESTIMATED_COST] == RAND_COST
 
 
-def test_get_estimated_cost_to_not_neighbors(new_node):
+def test_get_estimated_cost_to_self(new_node: Callable):
+    node_1 = new_node()
+    ret = node_1.get_estimated_cost_to(node_1, [])
+    assert ret[ESTIMATED_COST] == SELF_COST
+
+
+def test_get_estimated_cost_to_not_neighbors(new_node: Callable):
     node_1 = new_node()
     node_2 = new_node()
     ret = node_1.get_estimated_cost_to(node_2, [node_1])
     assert ret[ESTIMATED_COST] == NOT_ACCESSIBLE_COST
 
 
-def test_get_estimated_cost_to_not_a_node(new_node):
+def test_get_estimated_cost_to_not_a_node(new_node: Callable):
     node_1 = new_node()
     with raises(ValueError):
         node_1.get_estimated_cost_to('something', [node_1])
 
 
-def test_get_random_node(new_node):
+def test_get_random_node(new_node: Callable):
     TEST_SIZE = 10
     for i in range(TEST_SIZE):
         new_node()
     assert 0 <= Node.get_random_node_index() < TEST_SIZE
+
+
+def test_get_transmission_cost(new_node: Callable):
+    TEST_COST = 0.8
+    node_1, node_2 = create_neighbor_nodes(new_node, TEST_COST)
+    assert node_1.get_transmission_cost(node_2) == TEST_COST
+
+
+def test_get_transmission_cost_not_a_node(new_node: Callable):
+    node_1 = new_node()
+    with raises(ValueError):
+        node_1.get_transmission_cost('not a node')

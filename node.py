@@ -5,7 +5,10 @@ from typing import (
     Self,
 )
 
-from costs import NOT_ACCESSIBLE_COST
+from costs import (
+    NOT_ACCESSIBLE_COST,
+    SELF_COST,
+)
 
 ALPHA = 0.5
 QUEUE_TIME = 0
@@ -59,6 +62,15 @@ class Node:
         """
         raise ValueError(f"{val} is not a Node.")
 
+    @staticmethod
+    def is_node(val: Any) -> bool:
+        return isinstance(val, Node)
+
+    @staticmethod
+    def is_node_check(val: Any) -> NoReturn:
+        if not Node.is_node(val):
+            Node.raise_not_a_node(val)
+
     def __init__(self, index: int) -> Self:
         """
         Note: You should ONLY instantiate a node using the create_node factory
@@ -81,6 +93,9 @@ class Node:
 
     def __str__(self) -> str:
         return f'Node {self.index}'
+
+    def __repr__(self) -> str:
+        return self.__str__()
 
     @classmethod
     def create_node(cls) -> Self:
@@ -146,6 +161,14 @@ class Node:
         """
         return neighbor in self.neighbors
 
+    def is_neighbors_check(self, neighbor: Self) -> NoReturn:
+        """
+        Checks if the current node is neighbors with a node, if not raises
+        a ValueError.
+        """
+        if not self.is_neighbors_with(neighbor):
+            Node.raise_not_neighbors(self, neighbor)
+
     def add_neighbor(self, neighbor: Self, cost: float) -> NoReturn:
         """
         Adds a neighbor to the current node, with it's cost as a value. Then
@@ -163,9 +186,7 @@ class Node:
         Deletes a neighbor from the current node. Then tries to delete itself
         as a neighbor from the other node.
         """
-        if not self.is_neighbors_with(neighbor):
-            Node.raise_not_neighbors(self, neighbor)
-
+        self.is_neighbors_check(neighbor)
         del self.neighbors[neighbor]
         if neighbor.is_neighbors_with(self):
             neighbor.delete_neighbor(self)
@@ -178,10 +199,8 @@ class Node:
         Returns the cost that the node believes it will take to go to a
         destination from one of it's neighbors.
         """
-        if not self.is_neighbors_with(neighbor):
-            raise Node.raise_not_neighbors(self, neighbor)
-        if not isinstance(dest, Node):
-            raise Node.raise_not_a_node(dest)
+        self.is_neighbors_check(neighbor)
+        Node.is_node_check(dest)
 
         cost = self.neighbors[neighbor].get(dest, None)
 
@@ -202,11 +221,10 @@ class Node:
         This method exclusively uses knowledge that the node already has, and
         thus SHOULD NOT call any other node's methods.
         """
-        if not isinstance(dest, Node):
-            raise Node.raise_not_a_node(dest)
+        Node.is_node_check(dest)
 
         if self is dest:
-            return (Self, 0)
+            return (Self, SELF_COST)
 
         estimated_costs = {}
         for neighbor in self.neighbors:
@@ -233,7 +251,7 @@ class Node:
         Just calls the get_transmission_cost function from the costs module and
         passes the two nodes' indexes. The destination must be a neighbor.
         """
-        return self.get_cost_from_neighbr_to_dest(neighbor, neighbor)
+        return self.get_cost_from_neighbor_to_dest(neighbor, neighbor)
 
     def update_cost_to(self,
                        neighbor: Self,
@@ -269,7 +287,7 @@ class Node:
         """
         if self is dest:
             print("At destination!")
-            return 0
+            return SELF_COST
         (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, callers)
         callers.append(self)
         neighbors_estimated_cost = min_neighbor.route(dest, callers)

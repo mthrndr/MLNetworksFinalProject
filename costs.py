@@ -12,6 +12,8 @@ SAMPLE_TABLE = [
 
 MAX_COST = 1.00
 NOT_ACCESSIBLE_COST = MAX_COST + 1.00
+# How much it costs a node to access itself
+SELF_COST = 0.00
 
 
 def custom_table_print(table: list) -> bool:
@@ -51,7 +53,7 @@ def fill_table_with_init_costs(
     for i in range(NUM_NODES):
         for j in range(NUM_NODES):
             if i == j:
-                node_cost_table[i][j] = 0
+                node_cost_table[i][j] = SELF_COST
             else:
                 node_cost_table[i][j] = get_init_cost()
     return node_cost_table
