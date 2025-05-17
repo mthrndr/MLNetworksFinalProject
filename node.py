@@ -11,9 +11,9 @@ from costs import (
 )
 
 ALPHA = 0.5
-QUEUE_TIME = 0
+QUEUE_TIME = 0.0
 # Something really low so it gets picked.
-INIT_COST = 0
+INIT_COST = 0.0
 
 # For use in the estimated cost tuple
 ESTIMATED_NODE = 0
@@ -149,6 +149,12 @@ class Node:
         """
         return self.index
 
+    def get_queue_time(self) -> float:
+        """
+        Returns the node's queue time
+        """
+        return QUEUE_TIME
+
     def get_neighbors(self) -> dict:
         """
         Returns the node's neighbors.
@@ -259,14 +265,19 @@ class Node:
                        current_cost: float,
                        transmission_cost: float,
                        neighbors_estimated_cost: float,
-                       ) -> NoReturn:
+                       ) -> float:
         """
         Implements the Q-Routing delay update function, then updates the node's
         cost table from it's neighbor to the destination.
         """
-        new_cost = QUEUE_TIME + transmission_cost + neighbors_estimated_cost
+        print("In here!")
+        queue_time = self.get_queue_time()
+        new_cost = queue_time + transmission_cost + neighbors_estimated_cost
+        print(f'{new_cost=}')
+        print(f'{current_cost=}')
         updated_cost = ((1 - ALPHA) * current_cost) + (ALPHA * new_cost)
         self.neighbors[neighbor][dest] = updated_cost
+        return updated_cost
 
     def route(self,
               dest: Self,

@@ -5,9 +5,10 @@ from pytest import (
 from typing import Callable
 
 from node import (
+    ALPHA,
+    ESTIMATED_COST,
     INIT_COST,
     Node,
-    ESTIMATED_COST,
 )
 
 from costs import (
@@ -48,6 +49,10 @@ def test_get_nodes(new_node: Callable):
 
 def test_get_index(new_node: Callable):
     assert new_node().get_index() == 0
+
+
+def test_get_queue_time(new_node: Callable):
+    assert isinstance(new_node().get_queue_time(), float)
 
 
 def test_index_to_str(new_node: Callable):
@@ -180,3 +185,37 @@ def test_get_transmission_cost_not_a_node(new_node: Callable):
     node_1 = new_node()
     with raises(ValueError):
         node_1.get_transmission_cost('not a node')
+
+
+def test_get_transmission_cost_not_neighbors(new_node: Callable):
+    node_1 = new_node()
+    node_2 = new_node()
+    with raises(ValueError):
+        node_1.get_transmission_cost(node_2)
+
+
+def test_update_cost_to(new_node: Callable):
+    TEST_COST = 0.8
+    node_1, node_2 = create_neighbor_nodes(new_node, TEST_COST)
+    node_3 = new_node()
+    node_2.add_neighbor(node_3, TEST_COST)
+    curr_cost = node_1.get_cost_from_neighbor_to_dest(node_2, node_3)
+    assert curr_cost == INIT_COST
+    transmission_cost = node_1.get_transmission_cost(node_2)
+    assert transmission_cost == TEST_COST
+    assert node_2.get_transmission_cost(node_3) == TEST_COST
+    new_cost = node_1.update_cost_to(node_2,
+                                     node_3,
+                                     curr_cost,
+                                     transmission_cost,
+                                     TEST_COST)
+    assert new_cost == TEST_COST
+    curr_cost = node_1.get_cost_from_neighbor_to_dest(node_2, node_3)
+    new_cost = node_1.update_cost_to(node_2,
+                                     node_3,
+                                     curr_cost,
+                                     transmission_cost,
+                                     TEST_COST)
+    expected = (((1 - ALPHA) * TEST_COST) +
+                (ALPHA * (TEST_COST + TEST_COST + node_1.get_queue_time())))
+    assert new_cost == expected
