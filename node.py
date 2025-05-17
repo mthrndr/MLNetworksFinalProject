@@ -296,6 +296,8 @@ class Node:
         if self is dest:
             return SELF_COST
         (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, callers)
+        # Note: we want this to be a shallow copy so that we are always
+        # referring to the same nodes!
         new_callers = callers.copy()
         new_callers.append(self)
         neighbors_estimated_cost = min_neighbor.route(dest, new_callers)
