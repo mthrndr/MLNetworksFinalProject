@@ -5,10 +5,17 @@ from typing import (
     Self,
 )
 
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import networkx as nx
+
+
 from costs import (
     NOT_ACCESSIBLE_COST,
     SELF_COST,
 )
+
+mpl.use('QtAgg')
 
 ALPHA = 0.5
 QUEUE_TIME = 0.0
@@ -42,6 +49,48 @@ class Node:
     @staticmethod
     def get_node(index: int) -> Self:
         return Node.NODE_DICT[index]
+
+    @staticmethod
+    def print_nodes() -> NoReturn:
+        COLS = 5
+        ROWS = (Node.CURR_MAX_INDEX + 1)//COLS
+        for dest_index in Node.NODE_DICT:
+            G = nx.MultiDiGraph()
+            dest = Node.get_node(dest_index)
+            for index_i in Node.NODE_DICT:
+                G.add_node(index_i)
+            for index_i in Node.NODE_DICT:
+                if index_i is not dest_index:
+                    node_i = Node.get_node(index_i)
+                    for node_j in node_i.get_neighbors():
+                        index_j = node_j.get_index()
+                        cost = node_i.get_cost_from_neighbor_to_dest(node_j,
+                                                                     dest)
+                        cost_2 = node_j.get_cost_from_neighbor_to_dest(node_i,
+                                                                       dest)
+                        if cost > cost_2:
+                            G.add_edge(index_i, index_j, weight=cost)
+                        else:
+                            G.add_edge(index_j, index_i, weight=cost_2)
+            plt.subplot(ROWS, COLS, dest_index + 1, title=dest_index)
+            pos = nx.spring_layout(G, seed=7)
+            nx.draw_networkx_nodes(G, pos)
+            nx.draw_networkx_edges(
+                G,
+                pos,
+                arrowstyle="->",
+                arrowsize=10,
+                width=2,
+            )
+            edge_labels = nx.get_edge_attributes(G, "weight")
+            nx.draw_networkx_edge_labels(G, pos, edge_labels)
+            nx.draw_networkx_labels(G, pos, font_size=20,
+                                    font_family="sans-serif")
+            ax = plt.gca()
+            ax.set_axis_off()
+
+        plt.tight_layout()
+        plt.show(block=True)
 
     # Error methods:
 
@@ -139,7 +188,8 @@ class Node:
 
     def get_random_node_index() -> int:
         """
-        Returns a value between 0 and n, where n is the index of the final node
+        Returns a value between 0 and n, where n is the index of the final
+        node.
         """
         return randrange(Node.CURR_MAX_INDEX)
 
@@ -151,7 +201,8 @@ class Node:
 
     def get_queue_time(self) -> float:
         """
-        Returns the node's queue time
+        Returns the node's queue time.
+        Currently just returns a constant.
         """
         return QUEUE_TIME
 
@@ -244,7 +295,7 @@ class Node:
 
         # No neighbors: dest is not accessible, return NOT ACCESSIBLE which is
         # a very high cost
-        if len(estimated_costs) == 0:
+        if not estimated_costs:
             return (None, NOT_ACCESSIBLE_COST)
 
         min_neighbor, min_cost = min(estimated_costs.items(),
@@ -296,8 +347,12 @@ class Node:
         if self is dest:
             return SELF_COST
         (min_neighbor, min_cost) = self.get_estimated_cost_to(dest, callers)
-        # Note: we want this to be a shallow copy so that we are always
-        # referring to the same nodes!
+
+        if not min_neighbor:
+            return min_cost
+        # We want this to be a shallow copy so that we are always referring to
+        # the same nodes!
+
         new_callers = callers.copy()
         new_callers.append(self)
         neighbors_estimated_cost = min_neighbor.route(dest, new_callers)
@@ -308,7 +363,8 @@ class Node:
                                 min_cost,
                                 transmission_cost,
                                 neighbors_estimated_cost)
-        if len(callers) > 0:
+        # Note: An empty list has a boolean value of False
+        if callers:
             return min_cost
         else:
             # First sender, return final cost
